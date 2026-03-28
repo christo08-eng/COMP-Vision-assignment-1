@@ -1,0 +1,28 @@
+# AI Interaction Log — Task 1
+
+## Entry 001 — 2026-03-28
+
+**Tool:** Claude (claude.ai)  
+**Task:** Task 1 — Version control and project setup
+
+**Prompt:**
+Help me set up a Git repository for my COMP6001 assignment on image 
+restoration and object detection. I need folder structure, .gitignore, 
+README, branching strategy, and how to push to GitHub.
+
+**Output:**
+- Created folder structure: ai_logs, data/raw, data/deblurred, 
+  data/splits, notebooks, models, report
+- Set up .gitignore excluding data folders and Python cache files
+- Created develop branch for active development
+- Linked local repo to GitHub and pushed initial structure
+
+**Review notes:**
+- Verified folder structure matches assignment requirements
+- Checked .gitignore covers large data files and checkpoints
+- Commit message format follows conventional commits standard
+
+**Ethical notes:**
+- No code generated in this session, only project structure
+- No licensing or privacy concerns at this stage
+- AI used for guidance only, all commands reviewed before running
