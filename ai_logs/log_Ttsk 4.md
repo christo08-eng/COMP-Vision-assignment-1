@@ -1,6 +1,6 @@
 # AI Interaction Log — Task 4
 
-## Entry 001 — 2026-03-28
+## Entry 001 — 2026-03-29
 
 **Tool:** Claude (claude.ai)
 **Task:** Task 4 — Dataset Preparation and Training
@@ -8,101 +8,121 @@
 ---
 
 **Prompt:**
-I want to make sure my training dataset covers different blur 
-severities rather than being dominated by one type. What is the 
-best way to measure and stratify blur level across 1029 images?
+I am using the official GoPro train split with 2103 images for 
+dataset preparation. How do I ensure there is no overlap with the 
+test split I used in Tasks 2 and 3?
 
 **Output:**
-Laplacian variance is the standard approach for measuring image 
-sharpness. It computes the second spatial derivative of pixel 
-intensities — sharp edges produce high variance, blurry regions 
-produce low variance. Sort all images by this score and divide 
-into equal thirds to create heavy, medium and mild blur tiers. 
-Randomly sample from each tier equally to guarantee representation 
-across the full blur spectrum in your training set.
+The official GoPro split guarantees no overlap between train and 
+test by design — they are separate sequences captured at different 
+times. Simply using the train folder for annotation and the test 
+folder for evaluation is sufficient. Document this in your report 
+as it directly addresses the data leakage concern that exists 
+when using flat datasets without preserved splits.
 
 **My modifications and decisions:**
-- Applied to all 1029 images before any selection
-- Visualised one representative sample from each tier to verify
-- Selected 500 images with equal representation per tier
-- Used random seed 42 for full reproducibility
+- Confirmed train and test folders are completely separate
+- Used train split exclusively for all annotation and training
+- Used test split exclusively for all evaluation
+- Added explicit no-overlap verification print statement in code
 
 ---
 
 **Prompt:**
-I am using YOLOv8 to auto-annotate my deblurred images. Some images 
-produce zero detections and I am unsure whether to include them 
-as negative samples or skip them entirely.
+I selected 600 images from 2103 training images. Is this enough 
+to fine-tune YOLOv8 effectively and how should I justify this choice?
 
 **Output:**
-For object detection training, images with zero detections are 
-ambiguous — they could be genuinely empty scenes or missed detections 
-due to model limitations. Including them as negatives can help reduce 
-false positives but risks teaching the model to suppress real objects 
-if the annotations are wrong. For a dataset of this size and with 
-auto-annotation, skipping zero-detection images is the safer choice 
-as it avoids introducing incorrect negative labels into training.
+600 images with augmentation is sufficient for fine-tuning a 
+pretrained model. The key justification is that you are not 
+training from scratch — YOLOv8m already has strong feature 
+extraction from COCO training. After brightness and flip 
+augmentation your effective training set triples to around 1800 
+images. The stratified selection across blur tiers ensures diversity 
+which matters more than raw quantity for this task.
 
 **My modifications and decisions:**
-- Chose to skip zero-detection images as recommended
-- Tracked how many were skipped per split for transparency
-- Noted this decision and its rationale in dataset documentation
-- Monitored for class imbalance after skipping
+- Selected 600 images with 200 per blur tier for diversity
+- Applied brightness jitter and horizontal flip augmentation
+- Achieved 1191 effective training images after augmentation
+- Justified selection in report based on fine-tuning literature
 
 ---
 
 **Prompt:**
-My training mAP50 peaks at epoch 2 at 0.783 then fluctuates between 
-0.67 and 0.74 for the remaining epochs. Should I be concerned and 
-does this mean my model is not learning?
+My training mAP50 improved consistently from 0.099 at epoch 1 to 
+0.590 at epoch 19. All losses decreased steadily. Does this indicate 
+healthy training?
 
 **Output:**
-This is not unusual for fine-tuning on a small dataset with auto-generated 
-labels. The early peak often occurs because the pretrained weights 
-already generalise well and the model only needs minor adjustment. 
-The subsequent fluctuation is likely due to the label noise from 
-auto-annotation making the loss surface noisy. The best checkpoint 
-is automatically saved so the epoch 2 result is preserved regardless. 
-You could interpret the plateau as the model reaching the performance 
-ceiling given the label quality available.
+Yes this indicates healthy training. Consistent mAP improvement 
+with decreasing losses across all 20 epochs suggests the model 
+is genuinely learning from the deblurred dataset without 
+overfitting. The fact that improvement continued until epoch 19 
+suggests you could potentially benefit from a few more epochs, 
+but the gains would likely be marginal at this point.
 
 **My modifications and decisions:**
-- Confirmed best.pt checkpoint was saved correctly at epoch 2
-- Reviewed per-epoch results to confirm no catastrophic forgetting
-- Interpreted plateau as evidence of label noise ceiling in report
-- Evaluated final model on held-out test set to confirm generalisation
+- Confirmed all three loss curves decreased consistently
+- Noted mAP improvement continued through epoch 19
+- Saved best checkpoint at epoch 19 automatically
+- Reported training convergence as evidence of healthy fine-tuning
 
 ---
 
 **Prompt:**
-After augmentation my training set tripled from 331 to 993 images. 
-How do I verify the augmented labels are correct, especially for 
-the horizontally flipped images?
+The test set mAP50 is 0.536 while validation mAP50 was 0.590. 
+Is this gap concerning or expected?
 
 **Output:**
-For horizontal flip the only coordinate that changes is the centre x 
-value which becomes 1 minus the original cx. The cy, width and height 
-stay identical. To verify, load a few flipped images alongside their 
-label files and draw the bounding boxes manually to check alignment. 
-Pay particular attention to asymmetric objects like people facing 
-left or right where an incorrect flip would be obvious.
+A gap of around 5 percentage points between validation and test 
+is within normal range and not concerning. It reflects natural 
+variation between the two splits and confirms the model generalises 
+beyond the validation set. A larger gap would suggest overfitting. 
+Report both numbers and note that the test set result is the 
+unbiased estimate of real-world performance.
 
 **My modifications and decisions:**
-- Spot checked flipped coordinates on 5 sample images visually
-- Confirmed bounding boxes aligned correctly after flipping
-- Verified brightness augmented labels were identical to originals
-- Documented augmentation pipeline for reproducibility
+- Reported both validation and test mAP50 in results
+- Noted the gap is within acceptable range in report discussion
+- Used test set result as primary performance metric
+- Did not tune any hyperparameters based on test set results
 
 ---
 
 **Review notes:**
-- Stratification confirmed by visual inspection of tier representatives
-- Auto-annotation quality spot-checked on random sample images
-- Augmented label correctness verified visually before training
-- Test set kept completely separate from all training decisions
+- Train/test split separation confirmed before any annotation
+- Augmented label correctness verified on sample images
+- Training convergence confirmed through loss and mAP curves
+- Test set evaluation performed only once after training complete
 
 **Ethical notes:**
-- Auto-annotation label noise acknowledged as key limitation
-- Class imbalance documented — person and potted plant dominate
-- Dataset construction pipeline fully documented for reproducibility
-- AI consulted for methodological guidance, decisions made independently
+- Auto-annotation label noise acknowledged as limitation
+- Class imbalance documented — person and car dominate
+- No hyperparameter tuning performed on test set
+- Dataset construction fully reproducible with random seed 42
+
+
+---
+
+**Prompt:**
+Should I include the blurred versions of my training images 
+alongside the deblurred ones to make the model more robust 
+to both conditions?
+
+**Output:**
+This is a valid approach called mixed training and can improve 
+robustness. However it introduces a trade-off — the model must 
+balance learning from both clean and degraded inputs which can 
+reduce peak performance on either condition individually. For 
+this assignment since the goal is specifically to train on 
+deblurred images as stated in the task description, using only 
+deblurred images is the correct approach. Training on blurred 
+images would be a separate experiment worth mentioning as 
+future work.
+
+**My modifications and decisions:**
+- Kept training exclusively on deblurred images as per task spec
+- Retained blurred versions in separate folder for Task 5 comparison
+- Noted mixed training as a concrete future improvement suggestion
+- Referenced task specification as justification for design choice
